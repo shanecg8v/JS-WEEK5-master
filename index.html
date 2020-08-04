@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
+        integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/vue-loading-overlay@3/dist/vue-loading.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="all.css">
+</head>
+
+<body>
+    <div id="app" class="container">
+        <loading :active.sync="isLoading"></loading>
+        <div class="row">
+            <div class="col-4 mb-3" v-for="item in products" ::key="item.id">
+                <div class="card" style="width: 18rem;">
+                    <div class="card-img-top bg-img" :style="{backgroundImage:`url(${item.imageUrl[0]})`}"></div>
+                    <div class="card-body">
+                        <span class="badge badge-secondary float-right">{{item.category}}</span>
+                        <h5 class="card-title">{{item.title}}</h5>
+                        <p class="card-text">{{item.content}}</p>
+                        <div v-if="item.origin_price != item.price">
+                            <del>原價{{item.origin_price}}元</del>
+                            <h5>大特價{{item.price}}元</h5>
+                        </div>
+                        <div v-else>
+                            <h5>原價{{item.price}}元</h5>
+                        </div>
+                    </div>
+                    <div class="card-footer text-muted d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" @click="showProduct(item.id)"
+                            :disabled="status.loadingItem != ''">
+                            <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"
+                                v-if="status.loadingItem === item.id"></span>
+                            <span class="sr-only">Loading...</span>
+                            查看更多
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" @click="addToCart(item.id)"
+                            :disabled="status.loadingItem != ''">
+                            <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"
+                                v-if="status.loadingItem === item.id"></span>
+                            <span class="sr-only">Loading...</span>
+                            加到購物車</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center mt-4">
+            <div class="col-6">
+                <validation-observer v-slot="{ invalid }">
+                    <form @submit.prevent="submitForm">
+                        <validation-provider rules="required" v-slot="{errors,classes}">
+                            <div class="form-group">
+                                <label for="userName" class="form-label">收件人姓名</label>
+                                <input type="text" name="userName" class="form-control" :class="classes"
+                                    v-model="user.Name" id="userName" placeholder="請填入收件人" />
+                            </div>
+                            <span class="invalid-feedback">{{ errors[0] }}</span>
+                        </validation-provider>
+
+                        <validation-provider rules="required|email" v-slot="{errors,classes}">
+                            <div class="form-group">
+                                <label for="userEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" :class="classes" id="userEmail"
+                                    v-model="user.Email" name="userEmail" placeholder="請填入信箱" />
+                                <span class="invalid-feedback">{{ errors[0] }}</span>
+                            </div>
+                        </validation-provider>
+
+                        <validation-provider :rules="{regex: /^[0-9]+$/,required:true,min:10,max:10}"
+                            v-slot="{ errors,classes}">
+                            <div class="form-group">
+                                <label for="userPhone" class="form-label">電話</label>
+                                <input type="tel" class="form-control" :class="classes" id="userPhone"
+                                    v-model="user.Phone" name="userPhone" placeholder="請填入電話" />
+                                <span class="invalid-feedback">{{errors[0]}}</span>
+                            </div>
+                        </validation-provider>
+
+                        <validation-provider rules="required" v-slot="{errors,classes}">
+                            <div class="fomr-group">
+                                <label for="userAddress" class="form-label">地址</label>
+                                <input type="text" class="form-control" :class="classes" id="userAddress"
+                                    v-model="user.Address" placeholder="請填入收地址" />
+                                <span class="invalid-feedback">{{errors[0]}}<span>
+                            </div>
+                        </validation-provider>
+
+                        <validation-provider rules="required" v-slot="{errors,classes}">
+                            <div class="form-group">
+                                <label for="pay" class="form-label">購買方式</label>
+                                <select class="form-control" :class="classes" id="pay" name="pay" v-model="user.Pay">
+                                    <option disabled selected="selected">請選擇購買方式</option>
+                                    <option>WebATM</option>
+                                </select>
+                                <span class="invalid-feedback">{{errors[0]}}</span>
+                            </div>
+                        </validation-provider>
+
+                        <div class="form-group">
+                            <label for="" class="form-label">留言</label>
+                            <textarea name="" id="" class="form-control"></textarea>
+                        </div>
+
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-primary mx-auto" :disabled="invalid">送出表單</button>
+                        </div>
+                    </form>
+                </validation-observer>
+            </div>
+        </div>
+        <product-modal :user="user" :url="url" ref="productModal" @send-status="changeStatus" @get-cart='getCarts'>
+        </product-modal>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js"
+        integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous">
+    </script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"
+        integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-loading-overlay@3.3.2/dist/vue-loading.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vee-validate/3.3.0/vee-validate.full.min.js"></script>
+    <script type="module" src="./active.js"></script>
+</body>
+
+</html>
