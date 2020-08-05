@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
         integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
     <link href="https://cdn.jsdelivr.net/npm/vue-loading-overlay@3/dist/vue-loading.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.1/css/all.min.css' />
     <link rel="stylesheet" href="all.css">
 </head>
 
@@ -16,7 +16,7 @@
     <div id="app" class="container">
         <loading :active.sync="isLoading"></loading>
         <div class="row">
-            <div class="col-4 mb-3" v-for="item in products" ::key="item.id">
+            <div class="col-4 mb-3 mt-2" v-for="item in products" ::key="item.id">
                 <div class="card" style="width: 18rem;">
                     <div class="card-img-top bg-img" :style="{backgroundImage:`url(${item.imageUrl[0]})`}"></div>
                     <div class="card-body">
@@ -51,6 +51,63 @@
         </div>
 
         <div class="row justify-content-center mt-4">
+            <div class="col-6">
+                <div class="text-right mb-3">
+                    <button type="button" class="btn btn-outline-danger btn-sm" @click="removeCart('all')"
+                        :disabled="carts.length === 0">
+                        <i class="far fa-trash-alt">
+                            刪除所有項目
+                        </i>
+                    </button>
+                </div>
+                <table class="table mt-3">
+                    <thead>
+                        <tr>
+                            <th>刪除</th>
+                            <th>品名</th>
+                            <th width="150px">數量</th>
+                            <th>單位</th>
+                            <th>單價</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in carts" :key="item.product.id">
+                            <td scope="row" class="align-middle">
+                                <button type="button" class="btn btn-outline-danger btn-sm"
+                                    @click="removeCart(item.product.id)">
+                                    <i class="far fa-trash-alt"></i>
+                                </button>
+                            </td>
+                            <td class="align-middle">{{item.product.title}}</td>
+                            <td class="align-middle">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <button type="button" class="btn btn-outline-primary btn-sm"
+                                            @click="item.quantity += 1">+</button>
+                                    </div>
+                                    <input type="number" min="1" class="form-control text-center"
+                                        :value="item.quantity">
+                                    <div class="input-group-append">
+                                        <button type="button" class="btn btn-outline-primary btn-sm"
+                                            @click="item.quantity <= 1 ? 1 : item.quantity -= 1">-</button>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="align-middle">{{item.product.unit}}</td>
+                            <td class="align-middle text-right">{{item.product.price}}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr class="text-right">
+                            <td colspan="4" class="align-middle">總計</td>
+                            <td class="align-middle">{{ cartTotal }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="row justify-content-center mt-4 mb-3">
             <div class="col-6">
                 <validation-observer v-slot="{ invalid }">
                     <form @submit.prevent="submitForm">
@@ -91,24 +148,46 @@
                             </div>
                         </validation-provider>
 
-                        <validation-provider rules="required" v-slot="{errors,classes}">
+                        <validation-provider rules="required" v-slot="{errors}">
                             <div class="form-group">
                                 <label for="pay" class="form-label">購買方式</label>
-                                <select class="form-control" :class="classes" id="pay" name="pay" v-model="user.Pay">
-                                    <option disabled selected="selected">請選擇購買方式</option>
-                                    <option>WebATM</option>
+                                <select class="form-control" id="pay" name="pay" v-model="user.Pay">
+                                    <option disabled selected="selected" value="">請選擇購買方式</option>
+                                    <option value="WebATM">
+                                        WebATM
+                                    </option>
+                                    <option value="ATM">
+                                        ATM
+                                    </option>
+                                    <option value="CVS">
+                                        CVS
+                                    </option>
+                                    <option value="Barcode">
+                                        Barcode
+                                    </option>
+                                    <option value="Credit">
+                                        Credit
+                                    </option>
+                                    <option value="ApplePay">
+                                        ApplePay
+                                    </option>
+                                    <option value="GooglePay">
+                                        GooglePay
+                                    </option>
                                 </select>
                                 <span class="invalid-feedback">{{errors[0]}}</span>
                             </div>
                         </validation-provider>
 
                         <div class="form-group">
-                            <label for="" class="form-label">留言</label>
-                            <textarea name="" id="" class="form-control"></textarea>
+                            <label for="message" class="form-label">留言</label>
+                            <textarea name="message" id="message" v-model="user.Message"
+                                class="form-control"></textarea>
                         </div>
 
                         <div class="text-right">
-                            <button type="submit" class="btn btn-primary mx-auto" :disabled="invalid">送出表單</button>
+                            <button type="submit" class="btn btn-primary mx-auto"
+                                :disabled="invalid || carts.length == 0">送出表單</button>
                         </div>
                     </form>
                 </validation-observer>
@@ -116,6 +195,27 @@
         </div>
         <product-modal :user="user" :url="url" ref="productModal" @send-status="changeStatus" @get-cart='getCarts'>
         </product-modal>
+
+        <!-- 完成訂單 Modal -->
+        <div class="modal fade" id="orderModal" tabindex="-1" role="dialog" aria-labelledby="orderModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="orderModalLabel">完成訂單</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-danger">恭喜你已完成訂單。</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"

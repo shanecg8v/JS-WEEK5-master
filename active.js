@@ -1,9 +1,12 @@
 import productModal from './productModal.js';
+import zh_TW from './zh_TW.js';
 
 Vue.component('productModal', productModal);
 Vue.component('ValidationProvider', VeeValidate.ValidationProvider);
 Vue.component('ValidationObserver', VeeValidate.ValidationObserver);
 Vue.component('loading', VueLoading);
+
+VeeValidate.localize('tw', zh_TW);
 
 VeeValidate.configure({
     classes: {
@@ -19,9 +22,12 @@ new Vue({
         tempProduct: {
             imageUrl: []
         },
+        originalCarts: [],
+        carts: [],
         pagination: {},
         user: {
-            uuid: '7d6af3ec-1d81-48f8-8d68-f01597cd5fd6'
+            Pay: "",
+            uuid: '7d6af3ec-1d81-48f8-8d68-f01597cd5fd6',
         },
         status: {
             loadingItem: '',
@@ -31,7 +37,43 @@ new Vue({
     },
     methods: {
         submitForm() {
+            this.isLoading = true;
+            let api = `${this.url}${this.user.uuid}/ec/shopping`;
+            this.carts.forEach((item, index) => {
+                if (item.quantity != this.originalCarts[index].quantity) {
 
+                    let cart = {
+                        product: item.product.id,
+                        quantity: item.quantity,
+                    };
+                    axios.patch(api, cart);
+                }
+            });
+
+            api = `${this.url}${this.user.uuid}/ec/orders`;
+            const orders = {
+                name: this.user.Name,
+                email: this.user.Email,
+                tel: this.user.Phone,
+                address: this.user.Address,
+                payment: this.user.Pay,
+                message: this.user.Message,
+            }
+
+            axios.post(api, orders).then((res) => {
+                console.log(res);
+                if (res.data.data.id) {
+                    this.isLoading = false;
+
+                    $('#orderModal').modal('show');
+                    this.getCart();
+                }
+            }).catch((err) => {
+                this.isLoading = false;
+                console.log(err);
+                console.dir(err);
+                console.log(err.response.data.errors);
+            });
         },
         getProducts(num = 1) {
             this.isLoading = true;
@@ -56,7 +98,8 @@ new Vue({
 
             axios.get(api).then((res) => {
                 this.isLoading = false;
-                console.log(res);
+                this.carts = res.data.data;
+                this.originalCarts = JSON.parse(JSON.stringify(this.carts));
             });
         },
         addToCart(id) {
@@ -70,10 +113,36 @@ new Vue({
                 this.status.loadingItem = '';
                 this.getCarts();
             });
+        },
+        removeCart(id) {
+            this.isLoading = true;
+            let api = '';
+            switch (id) {
+                case 'all':
+                    api = `${this.url}${this.user.uuid}/ec/shopping/all/product`;
+                    break;
+                default:
+                    api = `${this.url}${this.user.uuid}/ec/shopping/${id}`;
+                    break;
+            }
+
+            axios.delete(api).then(() => {
+                this.isLoading = false;
+                this.getCarts();
+            });
+        },
+    },
+    computed: {
+        cartTotal() {
+            let total = 0;
+            this.carts.forEach((cart) => {
+                total += cart.quantity * cart.product.price;
+            })
+            return total;
         }
     },
     created() {
         this.getProducts();
         this.getCarts();
-    }
+    },
 });
