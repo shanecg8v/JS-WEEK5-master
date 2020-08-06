@@ -116,8 +116,8 @@
                                 <label for="userName" class="form-label">收件人姓名</label>
                                 <input type="text" name="userName" class="form-control" :class="classes"
                                     v-model="user.Name" id="userName" placeholder="請填入收件人" />
+                                <span class="invalid-feedback">{{ errors[0] }}</span>
                             </div>
-                            <span class="invalid-feedback">{{ errors[0] }}</span>
                         </validation-provider>
 
                         <validation-provider rules="required|email" v-slot="{errors,classes}">
@@ -140,7 +140,7 @@
                         </validation-provider>
 
                         <validation-provider rules="required" v-slot="{errors,classes}">
-                            <div class="fomr-group">
+                            <div class="form-group">
                                 <label for="userAddress" class="form-label">地址</label>
                                 <input type="text" class="form-control" :class="classes" id="userAddress"
                                     v-model="user.Address" placeholder="請填入收地址" />
@@ -148,10 +148,11 @@
                             </div>
                         </validation-provider>
 
-                        <validation-provider rules="required" v-slot="{errors}">
+                        <validation-provider rules="required" v-slot="{errors,classes}">
                             <div class="form-group">
                                 <label for="pay" class="form-label">購買方式</label>
-                                <select class="form-control" id="pay" name="pay" v-model="user.Pay">
+                                <select class="form-control custom-select" :class="classes" id="pay" name="pay"
+                                    v-model="user.Pay">
                                     <option disabled selected="selected" value="">請選擇購買方式</option>
                                     <option value="WebATM">
                                         WebATM
@@ -193,7 +194,7 @@
                 </validation-observer>
             </div>
         </div>
-        <product-modal :user="user" :url="url" ref="productModal" @send-status="changeStatus" @get-cart='getCarts'>
+        <product-modal :user="user" :url="url" ref="productModal" @send-status="changeStatus" @add-cart='addToCart'>
         </product-modal>
 
         <!-- 完成訂單 Modal -->
@@ -216,6 +217,9 @@
                 </div>
             </div>
         </div>
+
+        <!-- 重複選購 Toast -->
+        <toast ref="toast"></toast>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
@@ -231,7 +235,7 @@
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue-loading-overlay@3.3.2/dist/vue-loading.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vee-validate/3.3.0/vee-validate.full.min.js"></script>
-    <script type="module" src="./active.js"></script>
+    <script type="module" src="./js/active.js"></script>
 </body>
 
 </html>

@@ -53,6 +53,7 @@ export default {
   methods: {
     getProduct(id) {
       const api = `${this.url}${this.user.uuid}/ec/product/${id}`;
+      this.status.isLoading = false;
       axios.get(api).then(res => {
         this.tempProduct = res.data.data;
         this.$set(this.tempProduct, 'num', 0);
@@ -62,16 +63,21 @@ export default {
     },
     addToCart() {
       this.status.isLoading = true;
-      const api = `${this.url}${this.user.uuid}/ec/shopping`;
-      const cart = {
-        product: this.tempProduct.id,
-        quantity: this.tempProduct.num,
-      };
-      axios.post(api, cart).then(() => {
-        this.status.isLoading = false;
-        this.$emit('get-cart');
-        $('#productModal').modal('hide');
-      });
+      this.$emit('add-cart', this.tempProduct.id, this.tempProduct.num);
+      $('#productModal').modal('hide');
+      // const api = `${this.url}${this.user.uuid}/ec/shopping`;
+      // const cart = {
+      //   product: this.tempProduct.id,
+      //   quantity: this.tempProduct.num,
+      // };
+      // axios.post(api, cart).then(() => {
+      //   this.status.isLoading = false;
+
+      //   $('#productModal').modal('hide');
+      // }).catch((err) => {
+      //   this.status.isLoading = false;
+      //   this.$refs.toast.showToast(err.response.data.errors);
+      // });
     }
   }
 }
